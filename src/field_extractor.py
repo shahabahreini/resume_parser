@@ -79,10 +79,9 @@ class GeminiFieldExtractor(FieldExtractor):
             )
 
         raw = response.text.strip()
-        # Strip markdown code fences if the model wraps the JSON
         if raw.startswith("```"):
-            raw = raw.split("\n", 1)[1]  # remove opening fence line
-            raw = raw.rsplit("```", 1)[0]  # remove closing fence
+            raw = raw.split("\n", 1)[1]
+            raw = raw.rsplit("```", 1)[0]
             raw = raw.strip()
 
         try:
@@ -133,7 +132,7 @@ class GeminiFieldExtractor(FieldExtractor):
                         max_retries,
                     )
                     time.sleep(delay)
-                    delay *= 2  # exponential backoff
+                    delay *= 2
                 else:
                     logger.error("Gemini API error (code=%s): %s", exc.code, exc)
                     raise ConnectionError(
@@ -161,9 +160,6 @@ class GeminiFieldExtractor(FieldExtractor):
                     f"Network error: could not reach the Gemini API. "
                     f"Check your internet connection. ({exc})"
                 ) from exc
-
-
-# ── Concrete extractors ──────────────────────────────────────────────
 
 
 class NameExtractor(GeminiFieldExtractor):
@@ -216,7 +212,7 @@ class CombinedExtractor(GeminiFieldExtractor):
     avoids hitting per-minute rate limits on the free tier.
     """
 
-    _FIELD_KEY = ""  # not used — we override extract()
+    _FIELD_KEY = ""
     _PROMPT = (
         "You are a resume parsing assistant. "
         "Extract the candidate's full name, email address, and a list of "
@@ -260,7 +256,6 @@ class CombinedExtractor(GeminiFieldExtractor):
                 f"Raw response: {raw[:300]}"
             ) from exc
 
-        # Validate that all expected keys are present
         expected_keys = {"name", "email", "skills"}
         missing = expected_keys - set(data.keys())
         if missing:

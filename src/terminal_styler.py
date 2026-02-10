@@ -1,12 +1,4 @@
-"""Rich terminal output helpers for the resume parser.
-
-Provides a shared :class:`rich.console.Console` instance and convenience
-functions for printing styled status messages, panels, tables, and
-progress spinners so the CLI output looks professional and consistent.
-
-Colour palette follows a Zen aesthetic — muted earth tones, soft greens,
-warm stone, and quiet slate for a calm, focused terminal experience.
-"""
+"""Rich terminal output helpers for the resume parser."""
 
 from __future__ import annotations
 
@@ -22,35 +14,23 @@ from rich.table import Table
 from rich.text import Text
 from rich.theme import Theme
 
-# ── Zen colour palette ──────────────────────────────────────────────
-#
-#   Sage       #87af87  →  rgb(135,175,135)  →  "dark_sea_green"
-#   Stone      #af875f  →  rgb(175,135, 95)  →  "dark_goldenrod"
-#   Slate      #5f87af  →  rgb( 95,135,175)  →  "steel_blue"
-#   Dust rose  #d7875f  →  rgb(215,135, 95)  →  "dark_salmon"
-#   Sand       #d7af87  →  rgb(215,175,135)  →  "tan"
-#   Fog        #a8a8a8  →  grey                →  "grey66"
-#
-
 _THEME = Theme(
     {
-        "info": "#5f87af",  # slate
-        "success": "#87af87",  # sage
-        "warning": "#d7af87",  # sand
-        "error": "#d75f5f",  # muted rose
-        "heading": "bold #af875f",  # stone
-        "field_label": "#5f87af",  # slate
-        "field_value": "#d7d7af",  # parchment
-        "muted": "#6c6c6c",  # quiet grey
-        "accent": "#87af87",  # sage
-        "hint": "italic #6c6c6c",  # quiet grey
-        "filename": "bold #d7d7af",  # parchment
+        "info": "#5f87af",
+        "success": "#87af87",
+        "warning": "#d7af87",
+        "error": "#d75f5f",
+        "heading": "bold #af875f",
+        "field_label": "#5f87af",
+        "field_value": "#d7d7af",
+        "muted": "#6c6c6c",
+        "accent": "#87af87",
+        "hint": "italic #6c6c6c",
+        "filename": "bold #d7d7af",
     }
 )
 
 console = Console(theme=_THEME)
-
-# ── Convenience helpers ─────────────────────────────────────────────
 
 
 def print_heading(text: str) -> None:
@@ -141,7 +121,7 @@ def print_error_panel(title: str, message: str, hints: list[str] | None = None) 
     """Print a prominent error panel with optional recovery hints."""
     parts: list[Any] = [Text(message, style="#d75f5f")]
     if hints:
-        parts.append(Text())  # blank line
+        parts.append(Text())
         for h in hints:
             parts.append(Text(f"  > {h}", style="italic #6c6c6c"))
     panel = Panel(

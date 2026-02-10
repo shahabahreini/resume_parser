@@ -42,7 +42,6 @@ class WordParser(FileParser, extensions=(".docx",)):
             logger.error("Failed to open Word file '%s': %s", file_path.name, exc)
             raise RuntimeError(f"Cannot open '{file_path.name}': {exc}") from exc
 
-        # Try the standard python-docx approach first (paragraphs + tables)
         parts: list[str] = []
 
         for paragraph in doc.paragraphs:
@@ -62,9 +61,6 @@ class WordParser(FileParser, extensions=(".docx",)):
             logger.debug("Extracted %d text parts from paragraphs/tables", len(parts))
             return "\n".join(parts)
 
-        # Fallback: some templates use structured document tags (w:sdt)
-        # that python-docx doesn't expose.  Extract all <w:t> text from
-        # the raw XML inside the .docx zip.
         logger.info("Paragraphs/tables empty — falling back to raw XML extraction")
         return self._extract_from_xml(file_path)
 

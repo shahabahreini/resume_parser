@@ -87,7 +87,6 @@ class FileParser(ABC):
 
         logger.debug("Extracted %d characters from '%s'", len(text), file_path.name)
 
-        # Verify extracted text quality
         verifier = TextVerifier()
         result = verifier.verify(text)
         if not result.passed:

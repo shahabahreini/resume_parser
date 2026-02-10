@@ -28,7 +28,6 @@ class PDFParser(FileParser, extensions=(".pdf",)):
             ) from exc
 
         try:
-            # Check for encryption / password protection
             if doc.is_encrypted:
                 logger.error("PDF '%s' is encrypted/password-protected", file_path.name)
                 raise PermissionError(

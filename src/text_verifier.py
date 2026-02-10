@@ -75,13 +75,11 @@ class TextVerifier:
         """
         result = VerificationResult()
 
-        # 1. Empty check
         if not text.strip():
             result.is_empty = True
             logger.warning("Verification failed: extracted text is empty.")
-            return result  # no point running further checks
+            return result
 
-        # 2. Length check
         if len(text) < _MIN_TEXT_LENGTH:
             result.too_short = True
             logger.warning(
@@ -90,13 +88,11 @@ class TextVerifier:
                 _MIN_TEXT_LENGTH,
             )
 
-        # 3. Keyword check
         lower_text = text.lower()
         if not any(kw in lower_text for kw in _RESUME_KEYWORDS):
             result.missing_keywords = True
             logger.warning("Verification warning: no expected resume keywords found.")
 
-        # 4. Garbage / non-printable character check
         printable_count = sum(c in string.printable for c in text)
         ratio = printable_count / max(len(text), 1)
         if ratio < _MIN_PRINTABLE_RATIO:

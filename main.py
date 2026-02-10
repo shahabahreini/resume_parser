@@ -28,7 +28,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="resume-parser",
         description="Parse resumes and extract structured data using Gemini AI.",
-        add_help=False,  # we handle missing file ourselves
+        add_help=False,
     )
     parser.add_argument(
         "file",
@@ -51,7 +51,6 @@ def main():
     print_banner()
     console.print()
 
-    # ── Argument validation ─────────────────────────────────────────
     if not args.file:
         print_error_panel(
             "No file provided",
@@ -67,7 +66,6 @@ def main():
     file_path = args.file
     path = Path(file_path)
 
-    # ── Pre-flight file checks ──────────────────────────────────────
     if not path.exists():
         print_error_panel(
             "File not found",
@@ -99,7 +97,6 @@ def main():
     print_file_info(path)
     print_divider()
 
-    # ── Initialise AI extractor ─────────────────────────────────────
     try:
         extractor = ResumeExtractor(combined_extractor=CombinedExtractor())
     except EnvironmentError as exc:
@@ -123,7 +120,6 @@ def main():
 
     framework = ResumeParserFramework(extractor)
 
-    # ── Parse & extract ─────────────────────────────────────────────
     try:
         with make_spinner("Parsing resume and extracting fields..."):
             result = framework.parse_resume(file_path)
@@ -195,7 +191,7 @@ def main():
         print_error_panel(
             "Unexpected Error",
             f"{type(exc).__name__}: {exc}",
-            hints=["Check logs/resume_parser.log for details."],
+            hints=["Check the latest log file in logs/ for details."],
         )
         console.print_exception(show_locals=True)
         sys.exit(1)

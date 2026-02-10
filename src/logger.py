@@ -1,27 +1,22 @@
-"""Centralised logging configuration for the resume parser.
-
-Call :func:`setup_logging` once at application startup (in ``main.py``)
-to configure the root logger with both a Rich console handler and an
-optional rotating file handler.
-
-Every other module should simply use::
-
-    import logging
-    logger = logging.getLogger(__name__)
-"""
+"""Centralised logging configuration for the resume parser."""
 
 from __future__ import annotations
 
 import logging
-import sys
+from datetime import datetime
 from pathlib import Path
 
 from rich.console import Console
 from rich.logging import RichHandler
 
 _LOG_DIR = Path("logs")
-_LOG_FILE = _LOG_DIR / "resume_parser.log"
 _CONFIGURED = False
+
+
+def _make_log_path() -> Path:
+    """Generate a timestamped log file path."""
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    return _LOG_DIR / f"resume_parser_{timestamp}.log"
 
 
 def setup_logging(
@@ -34,10 +29,9 @@ def setup_logging(
 
     Args:
         level: Minimum log level (default ``DEBUG``).
-        log_to_file: If ``True``, also write logs to ``logs/resume_parser.log``.
+        log_to_file: If ``True``, write logs to a timestamped file under ``logs/``.
         log_to_console: If ``True``, show log messages in the terminal via
-            a Rich handler.  When ``False`` (the default) the terminal
-            stays clean — only styled application output is printed.
+            a Rich handler.
     """
     global _CONFIGURED  # noqa: PLW0603
     if _CONFIGURED:
@@ -47,7 +41,7 @@ def setup_logging(
     root = logging.getLogger()
     root.setLevel(level)
 
-    # ── Rich console handler (coloured, with timestamps) ────────────
+    # ── Rich console handler ────────────────────────────────────────
     if log_to_console:
         console = Console(stderr=True)
         rich_handler = RichHandler(
@@ -63,17 +57,11 @@ def setup_logging(
         rich_handler.setFormatter(rich_fmt)
         root.addHandler(rich_handler)
 
-    # ── File handler (plain text, detailed format) ──────────────────
+    # ── Timestamped file handler ────────────────────────────────────
     if log_to_file:
         _LOG_DIR.mkdir(exist_ok=True)
-        from logging.handlers import RotatingFileHandler
-
-        file_handler = RotatingFileHandler(
-            _LOG_FILE,
-            maxBytes=2 * 1024 * 1024,  # 2 MB
-            backupCount=3,
-            encoding="utf-8",
-        )
+        log_file = _make_log_path()
+        file_handler = logging.FileHandler(log_file, encoding="utf-8")
         file_handler.setLevel(logging.DEBUG)
         file_fmt = logging.Formatter(
             "%(asctime)s │ %(levelname)-8s │ %(name)-30s │ %(message)s",
