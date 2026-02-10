@@ -1,7 +1,8 @@
 import sys
-from pathlib import Path
 
+from src.field_extractor import EmailExtractor, NameExtractor, SkillsExtractor
 from src.resume_extractor import ResumeExtractor
+from src.resume_parser_framework import ResumeParserFramework
 
 
 def main():
@@ -9,9 +10,16 @@ def main():
         print("Usage: python3 main.py <resume_file>")
         sys.exit(1)
 
-    file_path = Path(sys.argv[1])
-    candidate = ResumeExtractor.from_file(file_path)
-    print(candidate)
+    field_extractors = {
+        "name": NameExtractor(),
+        "email": EmailExtractor(),
+        "skills": SkillsExtractor(),
+    }
+    extractor = ResumeExtractor(field_extractors)
+    framework = ResumeParserFramework(extractor)
+
+    result = framework.parse_resume(sys.argv[1])
+    print(result)
 
 
 if __name__ == "__main__":
