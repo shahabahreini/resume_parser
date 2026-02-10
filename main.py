@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-from src.file_parser import FileParser
+from src.resume_extractor import ResumeExtractor
 
 
 def main():
@@ -10,8 +10,8 @@ def main():
         sys.exit(1)
 
     file_path = Path(sys.argv[1])
-    text = FileParser.parse_resume(file_path)
-    print(text)
+    candidate = ResumeExtractor.from_file(file_path)
+    print(candidate)
 
 
 if __name__ == "__main__":
