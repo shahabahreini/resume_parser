@@ -44,6 +44,10 @@ uv run main.py resumes/resume.pdf -v
 | `file`      | —     | Yes      | —       | Path to a resume file (`.pdf` or `.docx`)  |
 | `--verbose` | `-v`  | No       | `False` | Show detailed log messages in the terminal |
 
+## Output
+
+On success, a styled panel displays the extracted **Name**, **Email**, and **Skills** directly in the terminal.
+
 ## Logging
 
 Each run writes a timestamped log to `logs/` (e.g. `resume_parser_2026-02-10_14-30-45.log`). Use `-v` to also print logs to the terminal.
