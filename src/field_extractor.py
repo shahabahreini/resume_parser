@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from abc import ABC, abstractmethod
 from typing import Any
 
 from dotenv import load_dotenv
 from google import genai
+from google.genai import errors as genai_errors
 
 
 class FieldExtractor(ABC):
@@ -35,7 +37,7 @@ class GeminiFieldExtractor(FieldExtractor):
     _PROMPT: str = ""
     _FIELD_KEY: str = ""
 
-    def __init__(self, model: str = "gemini-2.0-flash") -> None:
+    def __init__(self, model: str = "gemini-flash-latest") -> None:
         load_dotenv()
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
@@ -50,10 +52,7 @@ class GeminiFieldExtractor(FieldExtractor):
         """Send resume text to Gemini and return the extracted field value."""
         prompt = self._PROMPT.format(resume_text=resume_text)
 
-        response = self._client.models.generate_content(
-            model=self._model,
-            contents=prompt,
-        )
+        response = self._call_with_retry(prompt)
 
         if not response.text:
             raise ValueError("Gemini response returned empty or None text")
@@ -73,6 +72,28 @@ class GeminiFieldExtractor(FieldExtractor):
             ) from exc
 
         return data[self._FIELD_KEY]
+
+    def _call_with_retry(
+        self, prompt: str, *, max_retries: int = 5, initial_delay: float = 5.0
+    ):
+        """Call Gemini with exponential backoff on rate-limit (429) errors."""
+        delay = initial_delay
+        for attempt in range(max_retries + 1):
+            try:
+                return self._client.models.generate_content(
+                    model=self._model,
+                    contents=prompt,
+                )
+            except genai_errors.ClientError as exc:
+                if exc.code == 429 and attempt < max_retries:
+                    print(
+                        f"  ⏳ Rate limited. Retrying in {delay:.0f}s "
+                        f"(attempt {attempt + 1}/{max_retries})..."
+                    )
+                    time.sleep(delay)
+                    delay *= 2  # exponential backoff
+                else:
+                    raise
 
 
 # ── Concrete extractors ──────────────────────────────────────────────
@@ -119,3 +140,45 @@ class SkillsExtractor(GeminiFieldExtractor):
         "(no markdown, no extra text):\n"
         '{{"skills": ["...", "..."]}}'
     )
+
+
+class CombinedExtractor(GeminiFieldExtractor):
+    """Extract name, email, and skills in a single Gemini API call.
+
+    This reduces API usage by 3× compared to separate extractors and
+    avoids hitting per-minute rate limits on the free tier.
+    """
+
+    _FIELD_KEY = ""  # not used — we override extract()
+    _PROMPT = (
+        "You are a resume parsing assistant. "
+        "Extract the candidate's full name, email address, and a list of "
+        "technical/professional skills from the following resume text.\n\n"
+        "Resume text:\n---\n{resume_text}\n---\n\n"
+        "Respond ONLY with valid JSON in this exact format "
+        "(no markdown, no extra text):\n"
+        '{{"name": "...", "email": "...", "skills": ["...", "..."]}}'
+    )
+
+    def extract(self, resume_text: str) -> dict[str, Any]:
+        """Return a dict with ``name``, ``email``, and ``skills`` keys."""
+        prompt = self._PROMPT.format(resume_text=resume_text)
+        response = self._call_with_retry(prompt)
+
+        if not response.text:
+            raise ValueError("Gemini response returned empty or None text")
+
+        raw = response.text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1]
+            raw = raw.rsplit("```", 1)[0]
+            raw = raw.strip()
+
+        try:
+            data: dict = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                f"Failed to parse Gemini response as JSON:\n{raw}"
+            ) from exc
+
+        return data

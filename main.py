@@ -1,6 +1,6 @@
 import sys
 
-from src.field_extractor import EmailExtractor, NameExtractor, SkillsExtractor
+from src.field_extractor import CombinedExtractor
 from src.resume_extractor import ResumeExtractor
 from src.resume_parser_framework import ResumeParserFramework
 
@@ -10,12 +10,8 @@ def main():
         print("Usage: python3 main.py <resume_file>")
         sys.exit(1)
 
-    field_extractors = {
-        "name": NameExtractor(),
-        "email": EmailExtractor(),
-        "skills": SkillsExtractor(),
-    }
-    extractor = ResumeExtractor(field_extractors)
+    # Single API call extracts all fields — 3× fewer requests, avoids rate limits
+    extractor = ResumeExtractor(combined_extractor=CombinedExtractor())
     framework = ResumeParserFramework(extractor)
 
     result = framework.parse_resume(sys.argv[1])
