@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     pass
+
+logger = logging.getLogger(__name__)
 
 _registry: dict[str, type[FileParser]] = {}
 
@@ -51,6 +54,7 @@ class FileParser(ABC):
         """
         # Ensure subclasses are imported so they register themselves
         from src import pdf_parser, word_parser  # noqa: F401
+        from src.text_verifier import TextVerifier
 
         file_path = Path(file_path)
 
@@ -64,4 +68,19 @@ class FileParser(ABC):
             raise ValueError(
                 f"Unsupported file type: '{suffix}'. Supported types: {supported}"
             )
-        return parser_cls().parse(file_path)
+
+        text = parser_cls().parse(file_path)
+
+        # Verify extracted text quality
+        verifier = TextVerifier()
+        result = verifier.verify(text)
+        if not result.passed:
+            issues = "; ".join(result.issues)
+            logger.warning(
+                "Text verification issues for '%s': %s", file_path.name, issues
+            )
+            raise ValueError(
+                f"Extracted text from '{file_path.name}' failed verification: {issues}"
+            )
+
+        return text
