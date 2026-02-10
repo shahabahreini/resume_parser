@@ -46,7 +46,10 @@ class FileParser(ABC):
 
         Raises:
             FileNotFoundError: If the file does not exist.
-            ValueError: If the file extension is not supported.
+            ValueError: If the file extension is not supported or text
+                verification fails.
+            PermissionError: If the file cannot be read (e.g. encrypted PDF).
+            RuntimeError: If the file is corrupt or parsing fails.
         """
         # Ensure subclasses are imported so they register themselves
         from src import pdf_parser, word_parser  # noqa: F401
@@ -57,6 +60,12 @@ class FileParser(ABC):
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
 
+        if not file_path.is_file():
+            raise ValueError(f"Path is not a file: {file_path}")
+
+        if file_path.stat().st_size == 0:
+            raise ValueError(f"File is empty (0 bytes): {file_path.name}")
+
         suffix = file_path.suffix.lower()
         parser_cls = _registry.get(suffix)
         if parser_cls is None:
@@ -65,7 +74,18 @@ class FileParser(ABC):
                 f"Unsupported file type: '{suffix}'. Supported types: {supported}"
             )
 
-        text = parser_cls().parse(file_path)
+        logger.info("Parsing '%s' with %s", file_path.name, parser_cls.__name__)
+
+        try:
+            text = parser_cls().parse(file_path)
+        except (PermissionError, RuntimeError):
+            # Re-raise known errors from parsers without wrapping
+            raise
+        except Exception as exc:
+            logger.error("Parser crashed for '%s': %s", file_path.name, exc)
+            raise RuntimeError(f"Failed to parse '{file_path.name}': {exc}") from exc
+
+        logger.debug("Extracted %d characters from '%s'", len(text), file_path.name)
 
         # Verify extracted text quality
         verifier = TextVerifier()
@@ -79,4 +99,5 @@ class FileParser(ABC):
                 f"Extracted text from '{file_path.name}' failed verification: {issues}"
             )
 
+        logger.info("Text verification passed for '%s'", file_path.name)
         return text

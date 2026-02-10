@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from src.file_parser import FileParser
 from src.resume_data import ResumeData
 from src.resume_extractor import ResumeExtractor
+
+logger = logging.getLogger(__name__)
 
 
 class ResumeParserFramework:
@@ -32,5 +35,9 @@ class ResumeParserFramework:
         Returns:
             A populated ``ResumeData`` instance.
         """
+        logger.info("Starting resume parse for '%s'", file_path)
         text = FileParser.parse_resume(Path(file_path))
-        return self._extractor.extract(text)
+        logger.info("File parsed successfully, extracting fields")
+        result = self._extractor.extract(text)
+        logger.info("Resume extraction complete")
+        return result
